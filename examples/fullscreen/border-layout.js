@@ -75,8 +75,8 @@ Ext.onReady(function(){
             mapConfOpts: ['enableScrollWheelZoom','enableDoubleClickZoom','enableDragging'],
             mapControls: ['GSmallMapControl','GMapTypeControl'],
             setCenter: {
-                geoCodeAddr: '4 Yawkey Way, Boston, MA, 02215-3409, USA',
-                marker: {title: 'Fenway Park'}
+                lat: 42.339641,
+                lng: -71.094224
             },
 			markers: [{
                 lat: 42.339641,
