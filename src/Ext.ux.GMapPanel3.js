@@ -193,6 +193,8 @@ markers: [{
     // private
     mapDefinedGMap: false,
     // private
+    markers:[],
+    // private
     initComponent : function(){
         
         this.addEvents(
@@ -511,7 +513,7 @@ buttons: [
                 if (false && accuracy < this.minGeoAccuracy) {
                     this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, accuracy));
                 }else{
-                    point = this.fixLatLng(new google.maps.LatLng(place.af, place.cf));
+                    point = this.fixLatLng(place);
                     if (center){
                         this.getMap().setCenter(point, this.zoomLevel);
                     }
