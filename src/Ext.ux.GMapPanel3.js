@@ -364,7 +364,7 @@ markers: [{
 
         if (typeof listeners === 'object'){
             for (evt in listeners) {
-                GEvent.bind(mark, evt, this, listeners[evt]);
+                google.maps.event.addListener(mark, evt, this, listeners[evt]);
             }
         }
 
