@@ -193,8 +193,13 @@ markers: [{
     // private
     mapDefinedGMap: false,
     // private
-    markers:[],
+    markers: [],
     // private
+    cache: {
+        marker: [],
+        polyline: [],
+        infowindow: []
+    },
     initComponent : function(){
         
         this.addEvents(
@@ -206,6 +211,7 @@ markers: [{
              */
             'mapready'
         );
+        
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
 
     },
@@ -346,8 +352,6 @@ markers: [{
      */
     addMarker : function(point, marker, clear, center, listeners){
         
-        this.markers.push(marker);
-        
         Ext.applyIf(marker,{});
 
         if (clear === true){
@@ -358,28 +362,94 @@ markers: [{
         }
 
         var mark = new google.maps.Marker(Ext.apply(marker, {
-            position: point,
-            map: this.getMap()
+            position: point
         }));
+        
+        if (marker.infoWindow){
+            this.addInfoWindow(marker.infoWindow, point, mark);
+        }
+        
+        this.cache.marker.push(mark);
+        mark.setMap(this.getMap());
 
         if (typeof listeners === 'object'){
             for (evt in listeners) {
-                google.maps.event.addListener(mark, evt, this, listeners[evt]);
+                google.maps.event.addListener(mark, evt, listeners[evt]);
             }
         }
 
     },
+    /**
+     * Creates a single polyline.
+     * @param {Array} points an array of polyline points
+     * @param {Object} linestyle an object defining the line style to use
+     */
+    addPolyline : function(points, linestyle){
+        
+        var plinepnts = new google.maps.MVCArray, pline, linestyle = linestyle ? linestyle : {
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 2
+        };
+        
+        Ext.each(points, function(point){
+            plinepnts.push(new google.maps.LatLng(point.lat, point.lng));
+        }, this);
+        
+        var pline = new google.maps.Polyline(Ext.apply({
+          path: plinepnts
+        },linestyle));
+        
+        this.cache.polyline.push(pline);
+        
+        pline.setMap(this.getMap());
+
+    },
+    /**
+     * Creates an Info Window.
+     * @param {Object} inwin an Info Window configuration
+     * @param {GLatLng} point the point to show the Info Window at
+     * @param {GMarker} marker a marker to attach the Info Window to
+     */
+    addInfoWindow : function(inwin, point, marker){
+        
+        var me = this, infoWindow = new google.maps.InfoWindow({
+            content: inwin.content,
+            position: point
+        });
+        
+        google.maps.event.addListener(marker, 'click', function() {
+            me.hideAllInfoWindows();
+            infoWindow.open(me.getMap());
+        });
+        
+        this.cache.infowindow.push(infoWindow);
+
+    },
+    // private
+    hideAllInfoWindows : function(){
+        for (var i = 0; i < this.cache.infowindow.length; i++) {
+            this.cache.infowindow[i].close();
+        }
+    },
     // private
     clearMarkers : function(){
         
-        if (infowindow) {
-            infowindow.close();
-        }
-        
-        for (var i = 0; i < this.markers.length; i++) {
-            this.markers[i].set_map(null);
-        }
+        this.hideAllInfoWindows();
+        this.hideMarkers();
 
+    },
+    // private
+    hideMarkers : function(){
+        Ext.each(this.cache.marker, function(mrk){
+            mrk.setMap(null);
+        });
+    },
+    // private
+    showMarkers : function(){
+        Ext.each(this.cache.marker, function(mrk){
+            mrk.setMap(this.getMap());
+        });
     },
     // private
     addMapControls : function(){
