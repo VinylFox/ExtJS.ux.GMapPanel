@@ -366,7 +366,7 @@ markers: [{
         }));
         
         if (marker.infoWindow){
-            this.addInfoWindow(marker.infoWindow, point, mark);
+            this.createInfoWindow(marker.infoWindow, point, mark);
         }
         
         this.cache.marker.push(mark);
@@ -411,19 +411,23 @@ markers: [{
      * @param {GLatLng} point the point to show the Info Window at
      * @param {GMarker} marker a marker to attach the Info Window to
      */
-    addInfoWindow : function(inwin, point, marker){
+    createInfoWindow : function(inwin, point, marker){
         
         var me = this, infoWindow = new google.maps.InfoWindow({
             content: inwin.content,
             position: point
         });
         
-        google.maps.event.addListener(marker, 'click', function() {
-            me.hideAllInfoWindows();
-            infoWindow.open(me.getMap());
-        });
+        if (marker) {
+            google.maps.event.addListener(marker, 'click', function(){
+                me.hideAllInfoWindows();
+                infoWindow.open(me.getMap());
+            });
+        }
         
         this.cache.infowindow.push(infoWindow);
+
+        return infoWindow;
 
     },
     // private
