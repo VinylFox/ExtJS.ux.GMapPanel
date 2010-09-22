@@ -1,0 +1,474 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Complex chart example</title>
+<link rel="stylesheet" type="text/css" href="../../resources/css/ext-all.css" />
+<script type="text/javascript" src="../../adapter/ext/ext-base-debug.js"></script>
+<script type="text/javascript" src="../../ext-all-debug.js"></script>
+<!-- Includes for V3 of Google Maps -->
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> 
+<script src="../../src/Ext.ux.GMapPanel3.js"></script>
+<script type="text/javascript">
+Ext.chart.Chart.CHART_URL = '../../resources/charts.swf';
+
+Ext.ns('Ext.ux')
+
+Ext.ux.SliderThumbSync = new function() {
+
+    var onSliderDragStart = function(slider, e, thumb) {
+        if (thumb.shift = e.browserEvent.shiftKey) {
+            for (var ths = slider.thumbs, l = ths.length, i = 0, th; i < l; i++) {
+                if ((th = ths[i]) !== thumb) {
+                    th.offset = th.value - thumb.value;
+                }
+            }
+        }
+    }, onSliderDrag = function(slider, e, thumb) {
+        if (thumb.shift) {
+            for (var ths = slider.thumbs, l = ths.length, i = 0, th; i < l; i++) {
+                if ((th = ths[i]) !== thumb) {
+                    slider.setValue(i, thumb.value + th.offset, false);
+                }
+            }
+        }
+    }, onSliderDragEnd = function(slider, e) {
+        for (var ths = slider.thumbs, l = ths.length, i = 0, th; i < l; i++) {
+            delete ths[i].shift;
+        }
+    }, listenersObject = {
+        dragstart: onSliderDragStart,
+        drag: onSliderDrag,
+        dragend: onSliderDragEnd,
+    };
+
+    this.init = function(slider) {
+        slider.on(listenersObject);
+    };
+};
+
+function InfoWindowOverlay(bounds, image, map) {
+  this.setMap(map);
+}
+
+InfoWindowOverlay.prototype = new google.maps.OverlayView();
+
+Ext.onReady(function(){
+    var TrackPoint = Ext.data.Record.create([
+        { name: 'lon', mapping: 'Position/LongitudeDegrees', type: 'float' },
+        { name: 'lat', mapping: 'Position>LatitudeDegrees', type: 'float'},
+        { name: 'elevation', mapping: 'AltitudeMeters', type: 'float' },
+        { name: 'distance', mapping: 'DistanceMeters', type: 'float' },
+        { name: 'time', mapping: 'Time', type: 'date', dateFormat: 'c' },
+        { name: 'heartRate', mapping: 'HeartRateBpm>Value', type: 'int' },
+        { name: 'speed', mapping: 'Extensions>TPX>Speed', type: 'float',
+            convert: function(v) {
+                return v * 2.23693629;  // Metres/sec to miles/hour
+            }
+        },
+        { name: 'elapsed', mapping: 'Time', type: 'date',
+            convert: (function() {
+                var start;
+                return function(v, raw) {
+                    v = Date.parseDate(v, 'c');
+                    if (!start) {
+                        start = v;
+                    }
+                    return new Date((v.getTime() - start.getTime()));
+                }
+            })()
+        }
+    ]),
+    reader = new Ext.data.XmlReader({
+        record: 'Trackpoint'
+    }, TrackPoint);
+    store = new Ext.data.Store({
+        url: 'data/ride-data.xml',
+        reader: reader,
+        autoLoad: true,
+        listeners: {
+            load: function(store, recs, options) {
+                store.filterBy(function(rec) {
+                    return (rec.get('lat') !== 0 && rec.get('lon') !== 0);
+                });
+                var l = recs[recs.length - 1].get('elapsed').getTime() / 1000, mkrs = [], plinepnts = [], titletpl = new Ext.XTemplate('Speed: {speed:number("0.00")}\n{br}' +
+                    'H/R: {heartRate}\n{br}' +
+                    'Time: {elapsed:date("H:i:s")}\n{br}' +
+                    '{msg}'), c = '', total = store.getCount()-1;
+                timeSlider.setMaxValue(l);
+                timeSlider.setValue(1, l);
+                timeSlider.on({
+                    change: function() {
+                        var v = timeSlider.getValues();
+                        store.filterBy(function(rec) {
+                            var e = rec.get('elapsed').getTime() / 1000,
+                                hasLatLon = (rec.get('lat') !== 0 && rec.get('lon') !== 0);
+                            return (e >= v[0]) && (e <= v[1]) && hasLatLon;
+                        });
+                    },
+                    buffer: 50
+                });
+                
+                store.each(function(rec,i){
+                    if (i == 0){
+                        trackpointMap.getMap().setCenter(new google.maps.LatLng(rec.get('lat'), rec.get('lon')));
+                    }
+                    if (i % 10 == 0 || i == 0 || i == total) {
+                        if (i == 0){
+                            c = 'http://maps.google.com/mapfiles/kml/pal2/icon10.png';
+                        }else if(i == total){
+                            c = 'http://maps.google.com/mapfiles/kml/pal4/icon47.png';
+                        }else{
+                            c = 'http://maps.google.com/mapfiles/kml/pal2/icon13.png';
+                        }
+                        
+                        mkrs.push({
+                            lat: rec.get('lat'),
+                            lng: rec.get('lon'),
+                            marker: {
+                                icon: c,
+                                title: titletpl.apply(Ext.apply({msg:'Click to view more details',br:''},rec.data)),
+                                infoWindow: {
+                                    content: titletpl.apply(Ext.apply({msg:'',br:'<br/>'},rec.data))
+                                }
+                            }
+                        });
+                        
+                    }
+                    if (i % 2 == 0 || i == 0 || i == total) {
+                        plinepnts.push({
+                            lat: rec.get('lat'),
+                            lng: rec.get('lon')
+                        });
+                    } 
+                });
+                
+                trackpointMap.addPolyline(plinepnts);
+                
+                trackpointMap.addMarkers(mkrs);
+            },
+            single: true
+        }
+    }),
+    editTrackpoint = null,
+    trackpointEditForm = new Ext.form.FormPanel({
+        title: 'Edit Trackpoint',
+        region: 'north',
+        height: 300,
+        collapsible: true,
+        bodyStyle: 'padding: 5px;',
+        defaults: {
+            anchor: '100%'
+        },
+        items: [{
+            fieldLabel: 'Latitude',
+            xtype: 'numberfield',
+            name: 'lon'
+        }, {
+            fieldLabel: 'Longitude',
+            xtype: 'numberfield',
+            name: 'lat'
+        }, {
+            fieldLabel: 'Elevation',
+            xtype: 'numberfield',
+            name: 'elevation',
+        }, {
+            fieldLabel: 'Distance',
+            xtype: 'numberfield',
+            name: 'distance'
+        }, {
+            fieldLabel: 'Heart rate',
+            xtype: 'numberfield',
+            allowDecimals: false,
+            name: 'heartRate'
+        }, {
+            fieldLabel: 'Speed',
+            xtype: 'numberfield',
+            name: 'speed'
+        }, {
+            fieldLabel: 'Time',
+            xtype: 'textfield',
+            name: 'time',
+            setValue: function(v) {
+	            this.value = v;
+                this.el.dom.value = v ? v.format("d/m/Y H:i:s") : '';
+            },
+            getValue: function() {
+                return this.value;
+            },
+            readOnly: true
+        }, {
+            fieldLabel: 'Elapsed time',
+            xtype: 'textfield',
+            name: 'elapsed',
+            setValue: function(v) {
+                this.value = v;
+                this.el.dom.value = v ? v.format("H:i:s") : '';
+            },
+            getValue: function() {
+                return this.value;
+            },
+            readOnly: true
+        }],
+        fbar: [{
+            text: 'Update',
+            handler: function() {
+                trackpointEditForm.getForm().updateRecord(editTrackpoint);
+            }
+        },{
+            text: 'Delete',
+            handler: function() {
+                if (editTrackpoint) {
+                    store.remove(editTrackpoint);
+                    editTrackpoint = null;
+                    trackpointEditForm.getForm().reset();
+                }
+            }
+        }]
+    }),
+    bbarChrt = new Ext.Toolbar({
+        height: 28,
+        layout: {
+            type: 'hbox'
+        },
+        items: [
+            {
+                xtype: 'checkbox',
+                margins: '3 0 0 5',
+                boxLabel: 'Show Markers',
+                checked: true,
+                listeners: {
+                    check: function(cb, checked) {
+                        var map = checked ? trackpointMap.getMap() : null; 
+                        Ext.each(trackpointMap.cache.marker, function(mrk){
+                            mrk.setMap(map);
+                        });
+                    }
+                }
+            },
+            {
+                xtype: 'checkbox',
+                margins: '3 0 0 5',
+                boxLabel: 'Show Path',
+                checked: true,
+                listeners: {
+                    check: function(cb, checked) {
+                        var map = checked ? trackpointMap.getMap() : null; 
+                        Ext.each(trackpointMap.cache.polyline, function(pline){
+                            pline.setMap(map);
+                        });
+                    }
+                }
+            }
+        ]
+    }),
+    trackpointMap = new Ext.ux.GMapPanel({
+        region: 'center',
+        zoomLevel: 12,
+        gmapType: 'map',
+        border: true,
+        mapConfOpts: ['enableScrollWheelZoom','enableDoubleClickZoom','enableDragging'],
+        mapControls: ['GSmallMapControl','GMapTypeControl'],
+        setCenter: {
+            lat: 42.339641,
+            lng: -71.094224
+        }, bbar: bbarChrt
+    }),
+    heartRateSeries = {
+        yField: 'heartRate',
+        style: {
+            color: 0xff1100,
+            size: 8
+        }
+    },
+    speedSeries = {
+        yField: 'speed',
+        axis: 'secondary',
+        style: {
+            color: 0x00aa11,
+            size: 8
+        }
+    },
+    altitudeSeries = {
+        yField: 'elevation',
+        style: {
+            color: 0x00ff00,
+            size: 8
+        }
+    },
+    timeSlider = new Ext.slider.MultiSlider({
+        flex: 1,
+        values: [0, 0],
+        plugins : [
+            Ext.ux.SliderThumbSync,
+            new Ext.slider.Tip({
+                getText: function(thumb) {
+                    var start = new Date(thumb.slider.thumbs[0].value * 1000),
+                        end = new Date(thumb.slider.thumbs[1].value * 1000);
+                    return '<b>' + start.format("i:s") + ' to ' + end.format('i:s') + '</b>';
+                }
+            })
+        ],
+    }),
+    bbar = new Ext.Toolbar({
+        layout: {
+            type: 'hbox'
+        },
+        items: [
+            'Time range: ',
+            timeSlider,
+            {
+                xtype: 'checkbox',
+                margins: '3 0 0 5',
+                boxLabel: 'Show speed',
+                checked: true,
+                listeners: {
+                    check: function(cb, checked) {
+                        speedSeries.style.visibility = checked ? 'visible' : 'hidden';
+                        window.chart.refresh();
+                    }
+                }
+            },
+            {
+                xtype: 'checkbox',
+                margins: '3 0 0 5',
+                boxLabel: 'Show heart rate',
+                checked: true,
+                listeners: {
+                    check: function(cb, checked) {
+                        heartRateSeries.style.visibility = checked ? 'visible' : 'hidden';
+                        window.chart.refresh();
+                    }
+                }
+            }
+        ]
+    }),
+    chart = new Ext.chart.LineChart({
+        xtype: 'linechart',
+        ref: 'chart',
+        store: store,
+        yAxes: [
+            new Ext.chart.NumericAxis({
+                minimum: 130,
+                maximum: 220,
+                title: 'Heart rate',
+                position: 'left'
+            }),
+            new Ext.chart.NumericAxis({
+                minimum: 10,
+                maximum: 40,
+                majorUnit: 5,
+                title: 'Speed\nMPH',
+                position: 'right',
+                order: 'secondary'
+            })
+        ],
+        tipTpl: 'Speed: {speed:number("0.00")}\n' +
+            'H/R: {heartRate}\n' +
+            'Time: {elapsed:date("H:i:s")}\n' +
+            'Click to edit trackpoint',
+        tipRenderer: function(chart, rec, index, series) {
+            if (Ext.isString(chart.tipTpl)) {
+                chart.tipTpl = new Ext.XTemplate(chart.tipTpl);
+            }
+            return chart.tipTpl.apply(rec.data);
+        },
+        xField: 'elapsed',
+        xAxis: new Ext.chart.TimeAxis({
+            title: 'Elapsed time',
+            labelRenderer: function(date) {
+                return date.format("H:i:s");
+            }
+        }),
+        series: [ heartRateSeries, speedSeries ],
+        listeners: {
+            itemclick: function(evt) {
+                // Event properties: component (chart), index, item, seriesIndex, type, x, y
+                editTrackpoint = store.getAt(evt.index);
+                trackpointEditForm.getForm().loadRecord(editTrackpoint);
+                trackpointEditForm.getForm().findField(evt.seriesIndex ? 'speed' : 'heartRate').focus();
+				trackpointMap.getMap().setCenter(new google.maps.LatLng(editTrackpoint.get('lat'), editTrackpoint.get('lon')));
+            }
+        }
+    }),
+    chartAltitude = new Ext.chart.LineChart({
+        xtype: 'linechart',
+        ref: 'chartAltitude',
+        store: store,
+        yAxes: [
+            new Ext.chart.NumericAxis({
+                minimum: 40,
+                maximum: 110,
+                title: 'Altitude',
+                position: 'left'
+            }),
+            new Ext.chart.NumericAxis({
+                minimum: 40,
+                maximum: 110,
+                title: 'Altitude',
+                position: 'right',
+                order: 'secondary'
+            })
+        ],
+        xField: 'elapsed',
+        xAxis: new Ext.chart.TimeAxis({
+            title: 'Elapsed time',
+            labelRenderer: function(date) {
+                return date.format("H:i:s");
+            }
+        }),
+        series: [ altitudeSeries ],
+        listeners: {
+            itemclick: function(evt) {
+                // Event properties: component (chart), index, item, seriesIndex, type, x, y
+                editTrackpoint = store.getAt(evt.index);
+                trackpointEditForm.getForm().loadRecord(editTrackpoint);
+                trackpointEditForm.getForm().findField(evt.seriesIndex ? 'speed' : 'heartRate').focus();
+				trackpointMap.getMap().setCenter(new google.maps.LatLng(editTrackpoint.get('lat'), editTrackpoint.get('lon')));
+            }
+        }
+    });
+
+    new Ext.Viewport({
+        layout: 'fit',
+        items: {
+            border: false,
+            title: 'Edit Event Data',
+            layout: 'border',
+            items: [ {
+                layout: 'border',
+                region: 'west',
+                border: false,
+                split: true,
+                padding: 5,
+                margins: '5 0 5 5',
+                width: 300,
+                items: [trackpointEditForm,trackpointMap]
+            }, {
+                region: 'center',
+                margins: '5 5 5 0',
+                layout: 'border',
+                border: false,
+                items: [{
+                    xtype: 'panel',
+                    items: chart,
+                    border: true,
+                    region: 'center'
+                },{
+                    xtype: 'panel',
+                    items: chartAltitude,
+                    region: 'south',
+                    height: 300,
+                    split: true,
+                    border: true,
+                    bbar: bbar
+                }]
+            }]
+        }
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

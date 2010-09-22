@@ -209,11 +209,72 @@ markers: [{
              * @param {GMapPanel} this
              * @param {GMap} map
              */
-            'mapready'
+            'mapready',
+            /**
+             * @event apiready
+             * Fires when the Google Maps API is loaded
+             */
+            'apiready'
         );
         
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
 
+        if (Ext.isDefined(window.google)){
+          this.on('afterrender', this.apiReady, this);
+        }else{
+          window.gmapapiready = this.apiReady.createDelegate(this);
+          this.buildScriptTag('http://maps.google.com/maps/api/js?sensor=false&callback=gmapapiready');
+        }
+
+    },
+    apiReady : function(){
+        
+        if (this.rendered){
+          
+          (function(){
+          
+          if (this.gmapType === 'map'){
+              this.gmap = new google.maps.Map(this.body.dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
+              this.mapDefined = true;
+              this.mapDefinedGMap = true;
+          }
+          
+          if (this.gmapType === 'panorama'){
+              this.gmap = new GStreetviewPanorama(this.body.dom);
+              this.mapDefined = true;
+          }
+  
+          if (!this.mapDefined && this.gmapType){
+             this.gmap = new google.maps.Map(this.body.dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
+             this.gmap.setMapTypeId(this.gmapType);
+             this.mapDefined = true;
+             this.mapDefinedGMap = true;
+          }
+          
+          google.maps.event.addListenerOnce(this.getMap(), 'tilesloaded', this.onMapReady.createDelegate(this));
+          
+          if (typeof this.setCenter === 'object') {
+              if (typeof this.setCenter.geoCodeAddr === 'string'){
+                  this.geoCodeLookup(this.setCenter.geoCodeAddr, this.setCenter.marker, false, true, this.setCenter.listeners);
+              }else{
+                  if (this.gmapType === 'map'){
+                      var point = this.fixLatLng(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng));
+                      this.getMap().setCenter(point, this.zoomLevel);    
+                  }
+                  if (typeof this.setCenter.marker === 'object' && typeof point === 'object') {
+                      this.addMarker(point, this.setCenter.marker, this.setCenter.marker.clear);
+                  }
+              }
+              if (this.gmapType === 'panorama'){
+                  this.getMap().setLocationAndPOV(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng), {yaw: this.yaw, pitch: this.pitch, zoom: this.zoomLevel});
+              }
+          }
+          
+          }).defer(100,this);
+          
+        }else{
+          this.on('afterrender', this.apiReady, this);
+        }
     },
     // private
     afterRender : function(){
@@ -221,45 +282,16 @@ markers: [{
         var wh = this.ownerCt.getSize();
         Ext.applyIf(this, wh);
         
-        Ext.ux.GMapPanel.superclass.afterRender.call(this);    
-        
-        if (this.gmapType === 'map'){
-            this.gmap = new google.maps.Map(this.body.dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
-			this.mapDefined = true;
-			this.mapDefinedGMap = true;
-        }
-        
-        if (this.gmapType === 'panorama'){
-            this.gmap = new GStreetviewPanorama(this.body.dom);
-			this.mapDefined = true;
-        }
+        Ext.ux.GMapPanel.superclass.afterRender.call(this);
 
-		if (!this.mapDefined && this.gmapType){
-			this.gmap = new google.maps.Map(this.body.dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
-			this.gmap.setMapType(this.gmapType);
-			this.mapDefined = true;
-			this.mapDefinedGMap = true;
-		}
+    },
+    buildScriptTag: function(filename, callback) {
+        var script  = document.createElement('script'),
+        head        = document.getElementsByTagName("head")[0];
+        script.type = "text/javascript";
+        script.src  = filename;    
         
-        google.maps.event.addListenerOnce(this.getMap(), 'tilesloaded', this.onMapReady.createDelegate(this));
-        
-        if (typeof this.setCenter === 'object') {
-            if (typeof this.setCenter.geoCodeAddr === 'string'){
-                this.geoCodeLookup(this.setCenter.geoCodeAddr, this.setCenter.marker, false, true, this.setCenter.listeners);
-            }else{
-                if (this.gmapType === 'map'){
-                    var point = this.fixLatLng(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng));
-                    this.getMap().setCenter(point, this.zoomLevel);    
-                }
-                if (typeof this.setCenter.marker === 'object' && typeof point === 'object') {
-                    this.addMarker(point, this.setCenter.marker, this.setCenter.marker.clear);
-                }
-            }
-            if (this.gmapType === 'panorama'){
-                this.getMap().setLocationAndPOV(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng), {yaw: this.yaw, pitch: this.pitch, zoom: this.zoomLevel});
-            }
-        }
-
+        return head.appendChild(script);
     },
     // private
     onMapReady : function(){
@@ -377,7 +409,9 @@ markers: [{
                 google.maps.event.addListener(mark, evt, listeners[evt]);
             }
         }
-
+        
+        return mark;
+        
     },
     /**
      * Creates a single polyline.
@@ -596,7 +630,10 @@ buttons: [
                             marker.title = response.formatted_address;
                         }
                         Ext.applyIf(marker, {});
-                        this.addMarker(point, marker, clear, false, listeners);
+                        var mkr = this.addMarker(point, marker, clear, false, listeners);
+                        if (marker.callback){
+                          marker.callback.call(this, mkr, point);
+                        }
                     }
                 }
             }

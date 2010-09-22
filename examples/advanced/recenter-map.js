@@ -15,11 +15,11 @@ Ext.onReady(function(){
                 title: 'GMap Window Recenter',
                 closeAction: 'hide',
                 width:270,
-                height:173,
+                height:223,
                 x: 60,
                 y: 80,
-				resizable: false,
-				border: false,
+                resizable: false,
+                border: false,
                 items: {
                     xtype: 'form',
                     id: 'my_form',
@@ -49,6 +49,14 @@ Ext.onReady(function(){
                         xtype: 'textfield',
                         fieldLabel: 'Address',
                         name: 'addr'
+                    },{
+                        html: '- CIRCLE -',
+                        border: false,
+                        bodyStyle: 'margin: 0 0 3px 115px;'
+                    },{
+                        xtype: 'numberfield',
+                        fieldLabel: 'Radius (Miles)',
+                        name: 'radius'
                     }]
                 },
                 buttons: [{
@@ -57,7 +65,17 @@ Ext.onReady(function(){
                         var frm = Ext.getCmp('my_form').getForm();
                         var map = Ext.getCmp('my_map');
                         if (frm.findField('addr').getValue() != ''){
-                            map.geoCodeLookup(frm.findField('addr').getValue(), undefined, false, true, undefined);
+                            map.geoCodeLookup(frm.findField('addr').getValue(), {
+                              title: 'Center',
+                              callback: function(marker, point){
+                                var circle = new google.maps.Circle({
+                                  map: this.getMap(),
+                                  radius: (Ext.getCmp('my_form').getForm().findField('radius').getValue()*1.609)*1000
+                                });
+                                circle.bindTo('center', marker, 'position');
+                                this.getMap().fitBounds(circle.getBounds());
+                              }
+                            }, false, true, undefined);
                         }else{
                             if (frm.findField('lat').getValue() != '' && frm.findField('lng').getValue() != '' && frm.isValid()){
                                 var point = map.fixLatLng(new GLatLng(frm.findField('lat').getValue(), frm.findField('lng').getValue()));
@@ -96,7 +114,9 @@ Ext.onReady(function(){
                     mapControls: ['GSmallMapControl','GMapTypeControl','NonExistantControl'],
                     setCenter: {
                         geoCodeAddr: '4 Yawkey Way, Boston, MA, 02215-3409, USA',
-                        marker: {title: 'Fenway Park'}
+                        marker: {
+                          title: 'Fenway Park'
+                        }
                     },
 					buttons: [{
 						text: 'Museum of Fine Arts',
@@ -138,7 +158,9 @@ Ext.onReady(function(){
 					}],
                     listeners: {
                         resize: function(t){
+                          if (Ext.isDefined(window.google)){
                             t.geoCodeLookup('4 Yawkey Way, Boston, MA, 02215-3409, USA', undefined, false, true, undefined);
+                          }
                         }
                     }
                 }
