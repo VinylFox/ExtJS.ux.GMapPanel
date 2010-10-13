@@ -219,7 +219,7 @@ markers: [{
         
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
 
-        if (Ext.isDefined(window.google)){
+        if (window.google && window.google.maps){
           this.on('afterrender', this.apiReady, this);
         }else{
           window.gmapapiready = this.apiReady.createDelegate(this);
@@ -270,7 +270,7 @@ markers: [{
               }
           }
           
-          }).defer(100,this);
+          }).defer(200,this);
           
         }else{
           this.on('afterrender', this.apiReady, this);
