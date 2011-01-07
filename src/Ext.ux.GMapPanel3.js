@@ -31,6 +31,27 @@ Ext.ux.GMapPanel = Ext.extend(Ext.Panel, {
             msg: 'The webpage has gone over the requests limit in too short a period of time.' 
     }],
     /**
+     * @cfg {Array} locationTypes
+     * An array of msg/code/level pairs.
+     */
+    locationTypes: [{
+            level: 4,
+            code: 'ROOFTOP',
+            msg: 'The returned result is a precise geocode for which we have location information accurate down to street address precision.' 
+        },{
+            level: 3,
+            code: 'RANGE_INTERPOLATED',
+            msg: 'The returned result reflects an approximation (usually on a road) interpolated between two precise points (such as intersections). Interpolated results are generally returned when rooftop geocodes are unavailable for a street address.'
+        },{
+            level: 2,
+            code: 'GEOMETRIC_CENTER',
+            msg: 'The returned result is the geometric center of a result such as a polyline (for example, a street) or polygon (region).'
+        },{
+            level: 1,
+            code: 'APPROXIMATE',
+            msg: 'The returned result is approximate.' 
+    }],
+    /**
      * @cfg {String} respErrorTitle
      * Defaults to <tt>'Error'</tt>.
      */
@@ -47,9 +68,23 @@ Ext.ux.GMapPanel = Ext.extend(Ext.Panel, {
     geoErrorTitle : 'Address Location Error',
     /**
      * @cfg {String} geoErrorMsgAccuracy
-     * Defaults to <tt>'The address provided has a low accuracy.<br><br>Level {0} Accuracy (8 = Exact Match, 1 = Vague Match)'</tt>.
+     * Defaults to <tt>'The address provided has a low accuracy.<br><br>{0} Accuracy.'</tt>.
+     * <div class="mdetail-params"><ul>
+     * <li><b><code>ROOFTOP</code></b> : <div class="sub-desc"><p>
+     * The returned result is a precise geocode for which we have location information accurate down to street address precision.
+     * </p></div></li>
+     * <li><b><code>RANGE_INTERPOLATED</code></b> : <div class="sub-desc"><p>
+     * The returned result reflects an approximation (usually on a road) interpolated between two precise points (such as intersections). Interpolated results are generally returned when rooftop geocodes are unavailable for a street address.
+     * </p></div></li>
+     * <li><b><code>GEOMETRIC_CENTER</code></b> : <div class="sub-desc"><p>
+     * The returned result is the geometric center of a result such as a polyline (for example, a street) or polygon (region).
+     * </p></div></li>
+     * <li><b><code>APPROXIMATE</code></b> : <div class="sub-desc"><p>
+     * The returned result is approximate.
+     * </p></div></li>
+     * </ul></div>
      */
-    geoErrorMsgAccuracy : 'The address provided has a low accuracy.<br><br>Level {0} Accuracy (8 = Exact Match, 1 = Vague Match)',
+    geoErrorMsgAccuracy : 'The address provided has a low accuracy.<br><br>"{0}" Accuracy.<br><br>{1}',
     /**
      * @cfg {String} gmapType
      * The type of map to display, generic options available are: 'map', 'panorama'.
@@ -142,10 +177,10 @@ setCenter: {
     displayGeoErrors: false,
     /**
      * @cfg {Boolean} minGeoAccuracy
-     * The level (between 1 & 8) to display an accuracy error below. Defaults to <tt>7</tt>. For additional information
+     * The level to display an accuracy error below. Defaults to <tt>ROOFTOP</tt>. For additional information
      * see <a href="http://code.google.com/apis/maps/documentation/reference.html#GGeoAddressAccuracy">here</a>.
      */
-    minGeoAccuracy: 7,
+    minGeoAccuracy: 'ROOFTOP',
     /**
      * @cfg {Array} mapConfOpts
      * Array of strings representing configuration methods to call, a full list can be found
@@ -192,14 +227,6 @@ markers: [{
     mapDefined: false,
     // private
     mapDefinedGMap: false,
-    // private
-    markers: [],
-    // private
-    cache: {
-        marker: [],
-        polyline: [],
-        infowindow: []
-    },
     initComponent : function(){
         
         this.addEvents(
@@ -216,6 +243,15 @@ markers: [{
              */
             'apiready'
         );
+        
+        Ext.applyIf(this,{
+          markers: [],
+          cache: {
+              marker: [],
+              polyline: [],
+              infowindow: []
+          }
+        });
         
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
 
@@ -252,14 +288,16 @@ markers: [{
           }
           
           google.maps.event.addListenerOnce(this.getMap(), 'tilesloaded', this.onMapReady.createDelegate(this));
+          google.maps.event.addListener(this.getMap(), 'dragend', this.dragEnd.createDelegate(this));
           
           if (typeof this.setCenter === 'object') {
               if (typeof this.setCenter.geoCodeAddr === 'string'){
                   this.geoCodeLookup(this.setCenter.geoCodeAddr, this.setCenter.marker, false, true, this.setCenter.listeners);
               }else{
                   if (this.gmapType === 'map'){
-                      var point = this.fixLatLng(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng));
-                      this.getMap().setCenter(point, this.zoomLevel);    
+                      var point = new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng);
+                      this.getMap().setCenter(point, this.zoomLevel);
+                      this.lastCenter = point;  
                   }
                   if (typeof this.setCenter.marker === 'object' && typeof point === 'object') {
                       this.addMarker(point, this.setCenter.marker, this.setCenter.marker.clear);
@@ -285,6 +323,7 @@ markers: [{
         Ext.ux.GMapPanel.superclass.afterRender.call(this);
 
     },
+    // private
     buildScriptTag: function(filename, callback) {
         var script  = document.createElement('script'),
         head        = document.getElementsByTagName("head")[0];
@@ -312,6 +351,9 @@ markers: [{
         // check for the existance of the google map in case the onResize fires too early
         if (typeof this.getMap() == 'object') {
             google.maps.event.trigger(this.getMap(), 'resize');
+            if (this.lastCenter){
+              this.getMap().setCenter(this.lastCenter, this.zoomLevel);
+            }
         }
 
     },
@@ -323,8 +365,15 @@ markers: [{
         // check for the existance of the google map in case setSize is called too early
         if (Ext.isObject(this.getMap())) {
             google.maps.event.trigger(this.getMap(), 'resize');
+            if (this.lastCenter){
+              this.getMap().setCenter(this.lastCenter, this.zoomLevel);
+            }
         }
         
+    },
+    // private
+    dragEnd: function(){
+      this.lastCenter = this.getMap().getCenter();
     },
     /**
      * Returns the current google map which can be used to call Google Maps API specific handlers.
@@ -341,7 +390,7 @@ markers: [{
      */
     getCenter : function(){
         
-        return this.fixLatLng(this.getMap().getCenter());
+        return this.getMap().getCenter();
         
     },
     /**
@@ -366,7 +415,7 @@ markers: [{
                     if (typeof markers[i].geoCodeAddr == 'string') {
                         this.geoCodeLookup(markers[i].geoCodeAddr, markers[i].marker, false, markers[i].setCenter, markers[i].listeners);
                     } else {
-                        var mkr_point = this.fixLatLng(new google.maps.LatLng(markers[i].lat, markers[i].lng));
+                        var mkr_point = new google.maps.LatLng(markers[i].lat, markers[i].lng);
                         this.addMarker(mkr_point, markers[i].marker, false, markers[i].setCenter, markers[i].listeners);
                     }
                 }
@@ -390,7 +439,8 @@ markers: [{
             this.clearMarkers();
         }
         if (center === true) {
-            this.getMap().setCenter(point, this.zoomLevel);
+            this.getMap().setCenter(point, this.zoomLevel)
+            this.lastCenter = point;
         }
 
         var mark = new google.maps.Marker(Ext.apply(marker, {
@@ -587,49 +637,51 @@ buttons: [
             this.geocoder = new google.maps.Geocoder();
         }
         this.geocoder.geocode({
-			address: addr
-		}, this.addAddressToMap.createDelegate(this, [addr, marker, clear, center, listeners], true));
+    			address: addr
+    		}, this.addAddressToMap.createDelegate(this, [addr, marker, clear, center, listeners], true));
         
     },
-	// private 
-	centerOnClientLocation : function(){
-		this.getClientLocation(function(loc){
-			var point = this.fixLatLng(new google.maps.LatLng(loc.latitude,loc.longitude));
-            this.getMap().setCenter(point, this.zoomLevel);
-		});
-	},
-	// private
-	getClientLocation : function(fn, errorFn){
-		if (!errorFn) {
-            errorFn = Ext.emptyFn;
-        }
-		if (!this.clientGeo) {
-			this.clientGeo = google.gears.factory.create('beta.geolocation');
-		}
-		geo.getCurrentPosition(fn.createDelegate(this), errorFn);
-	},
+  	// private 
+  	centerOnClientLocation : function(){
+  		this.getClientLocation(function(loc){
+  			var point = new google.maps.LatLng(loc.latitude,loc.longitude);
+        this.getMap().setCenter(point, this.zoomLevel);
+        this.lastCenter = point;
+  		});
+  	},
+  	// private
+  	getClientLocation : function(fn, errorFn){
+  		if (!errorFn) {
+          errorFn = Ext.emptyFn;
+      }
+  		if (!this.clientGeo) {
+  			this.clientGeo = google.gears.factory.create('beta.geolocation');
+  		}
+  		geo.getCurrentPosition(fn.createDelegate(this), errorFn);
+  	},
     // private
     addAddressToMap : function(response, status, addr, marker, clear, center, listeners){
         if (!response || status !== 'OK') {
             this.respErrorMsg(status);
         }else{
-            var place = response[0].geometry.location;
-			var accuracy;
-            if (false && accuracy === 0) {
+            var place = response[0].geometry.location,
+			          accuracy = this.getLocationTypeInfo(response[0].geometry.location_type,'level'),
+			          reqAccuracy = this.getLocationTypeInfo(this.minGeoAccuracy,'level');
+            if (accuracy === 0) {
                 this.geoErrorMsg(this.geoErrorTitle, this.geoErrorMsgUnable);
             }else{
-                if (false && accuracy < this.minGeoAccuracy) {
-                    this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, accuracy));
+                if (accuracy < reqAccuracy) {
+                    this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, response[0].geometry.location_type, this.getLocationTypeInfo(response[0].geometry.location_type,'msg')));
                 }else{
-                    point = this.fixLatLng(place);
+                    point = new google.maps.LatLng(place.xa,place.za);
                     if (center){
                         this.getMap().setCenter(point, this.zoomLevel);
+                        this.lastCenter = point;
                     }
                     if (typeof marker === 'object') {
                         if (!marker.title){
                             marker.title = response.formatted_address;
                         }
-                        Ext.applyIf(marker, {});
                         var mkr = this.addMarker(point, marker, clear, false, listeners);
                         if (marker.callback){
                           marker.callback.call(this, mkr, point);
@@ -654,17 +706,16 @@ buttons: [
             }
         }, this);
     },
- 	// private
-	// used to inverse the lat/lng coordinates to correct locations on the sky map
-	fixLatLng : function(llo){
-        if (this.getMap().getMapTypeId() === 'SKY') {
-            if (this.getMap().getCurrentMapType().QO == 'visible') {
-                llo.lat(180 - llo.lat());
-                llo.lng(180 - llo.lng());
-            }
+    // private
+    getLocationTypeInfo: function(location_type,property){
+      var val = 0;
+      Ext.each(this.locationTypes, function(itm){
+        if (itm.code === location_type){
+          val = itm[property];
         }
-		return llo;
-	}
+      });
+      return val;
+    }
 });
 
 Ext.reg('gmappanel',Ext.ux.GMapPanel); 

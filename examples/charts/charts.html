@@ -47,12 +47,6 @@ Ext.ux.SliderThumbSync = new function() {
     };
 };
 
-function InfoWindowOverlay(bounds, image, map) {
-  this.setMap(map);
-}
-
-InfoWindowOverlay.prototype = new google.maps.OverlayView();
-
 Ext.onReady(function(){
     var TrackPoint = Ext.data.Record.create([
         { name: 'lon', mapping: 'Position/LongitudeDegrees', type: 'float' },
@@ -85,7 +79,6 @@ Ext.onReady(function(){
     store = new Ext.data.Store({
         url: 'data/ride-data.xml',
         reader: reader,
-        autoLoad: true,
         listeners: {
             load: function(store, recs, options) {
                 store.filterBy(function(rec) {
@@ -272,7 +265,12 @@ Ext.onReady(function(){
         setCenter: {
             lat: 42.339641,
             lng: -71.094224
-        }, bbar: bbarChrt
+        }, bbar: bbarChrt,
+        listeners: {
+          'mapready': function(map){
+            store.load();
+          }
+        }
     }),
     heartRateSeries = {
         yField: 'heartRate',

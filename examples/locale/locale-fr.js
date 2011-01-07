@@ -20,10 +20,27 @@ if(Ext.ux.GMapPanel){
                 code: 'OVER_QUERY_LIMIT',
                 msg: 'La cl&eacute; a &eacute;t&eacute; donn&eacute; sur la demande dans la limite de 24 heures ou a soumis un trop grand nombre de demandes dans un d&eacute;lai trop court de temps. Si vous envoyez des demandes multiples en parall&egrave;le ou dans une boucle serr&eacute;e, utilisez une minuterie ou d\'une pause dans votre code pour vous assurer de ne pas envoyer trop rapidement les demandes.' 
         }],
+        locationTypes: [{
+                level: 4,
+                code: 'ROOFTOP',
+                msg: 'Le résultat retourné est un géocodage précise pour laquelle nous avons des informations de localisation précises jusqu\'au précision adresse.' 
+            },{
+                level: 3,
+                code: 'RANGE_INTERPOLATED',
+                msg: 'Le résultat renvoyé reflète une approximation (généralement sur une route) par interpolation entre deux points précis (tels que les intersections). Résultats interpolés sont généralement retournés lorsque géocodes sur le toit ne sont pas disponibles pour une adresse de rue.'
+            },{
+                level: 2,
+                code: 'GEOMETRIC_CENTER',
+                msg: 'Le résultat renvoyé est le centre géométrique d\'un résultat comme une polyligne (par exemple, une rue) ou d\'un polygone (région).'
+            },{
+                level: 1,
+                code: 'APPROXIMATE',
+                msg: 'Le résultat retourné est approximative.' 
+        }],
         respErrorTitle : 'Erreur',
         geoErrorMsgUnable : 'Impossible de localiser l\'adresse que vous avez fournis',
         geoErrorTitle : 'Adresse Lieu erreur',
-        geoErrorMsgAccuracy : 'L\'adresse fournie a une faible pr&eacute;cision. <br> Niveau {0} Pr&eacute;cision (8 = Exact Match, 1 = Vague Match)'
+        geoErrorMsgAccuracy : 'L\'adresse fournie a une faible pr&eacute;cision. <br><br> "{0}" Pr&eacute;cision<br><br>{1}'
     });
 }
 
@@ -50,21 +67,22 @@ Ext.onReady(function(){
                     gmapType: google.maps.MapTypeId.SATELLITE,
                     id: 'my_map',
                     displayGeoErrors: true,
+                    minGeoAccuracy: 'GEOMETRIC_CENTER',
                     setCenter: {
-                        geoCodeAddr: 'Eiffel Tower, Paris, France',
+                        geoCodeAddr: '5 Avenue Anatole France, 92110 Clichy, France',
                         marker: {title: 'Eiffel Tower'}
                     },
-					buttons: [{
-						text: 'Bogus Address',
-						handler: function(){
-							Ext.getCmp('my_map').geoCodeLookup('Some Fake, Address, For, Errors', undefined, false, true, undefined);
-						}
-					},{
-						text: 'Low Accuracy',
-						handler: function(){
-							Ext.getCmp('my_map').geoCodeLookup('Paris, France', undefined, false, true, undefined);
-						}
-					}]
+          					buttons: [{
+          						text: 'Bogus Address',
+          						handler: function(){
+          							Ext.getCmp('my_map').geoCodeLookup('Some Fake, Address, For, Errors', undefined, false, true, undefined);
+          						}
+          					},{
+          						text: 'Low Accuracy',
+          						handler: function(){
+          							Ext.getCmp('my_map').geoCodeLookup('Paris, France', undefined, false, true, undefined);
+          						}
+          					}]
                 }
             });
             

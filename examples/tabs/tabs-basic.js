@@ -27,14 +27,36 @@ Ext.onReady(function(){
 			setCenter: {
 				geoCodeAddr: '4 Yawkey Way, Boston, MA, 02215-3409, USA',
 				marker: {title: 'Fenway Park'}
-			}
+			},
+      buttons: [{
+        text: 'Hide Markers',
+        handler: function(){
+          Ext.getCmp('my_map1').hideMarkers();
+        }
+      },{
+        text: 'Show Markers',
+        handler: function(){
+          Ext.getCmp('my_map1').showMarkers();
+        }
+      }]
 		},{
 			title: 'Boston Museum of Fine Arts',
 			id: 'my_map2',
 			setCenter: {
 				geoCodeAddr: '465 Huntington Avenue, Boston, MA, 02215-5597, USA',
 				marker: {title: 'Boston Museum of Fine Arts'}
-            }
+      },
+      buttons: [{
+        text: 'Hide Markers',
+        handler: function(){
+          Ext.getCmp('my_map2').hideMarkers();
+        }
+      },{
+        text: 'Show Markers',
+        handler: function(){
+          Ext.getCmp('my_map2').showMarkers();
+        }
+      }]
 		}]
 	});
 
