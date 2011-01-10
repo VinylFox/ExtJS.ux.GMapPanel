@@ -537,7 +537,7 @@ markers: [{
     showMarkers : function(){
         Ext.each(this.cache.marker, function(mrk){
             mrk.setMap(this.getMap());
-        });
+        },this);
     },
     // private
     addMapControls : function(){
