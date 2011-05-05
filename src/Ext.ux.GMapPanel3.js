@@ -673,7 +673,7 @@ buttons: [
                 if (accuracy < reqAccuracy) {
                     this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, response[0].geometry.location_type, this.getLocationTypeInfo(response[0].geometry.location_type,'msg')));
                 }else{
-                    point = new google.maps.LatLng(place.xa,place.za);
+                    point = new google.maps.LatLng(place.lat(),place.lng());
                     if (center){
                         this.getMap().setCenter(point, this.zoomLevel);
                         this.lastCenter = point;
