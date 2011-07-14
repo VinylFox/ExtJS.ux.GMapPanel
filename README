@@ -1,0 +1,12 @@
+== Google Maps Panel ==
+
+This is a panel that displays a Google Map.
+
+= Compatibility =
+
+There are versions of this extension that work with Google Maps V2 or V3, along with versions that are compatible with ExtJS 3 or 4
+
+* GMapPanel - Google Maps V2 & ExtJS 3
+* GMapPanel3 - Google Maps V3 & ExtJS 3
+* GMapPanel3-Ext4 - Google Maps V3 & ExtJS 4
+
