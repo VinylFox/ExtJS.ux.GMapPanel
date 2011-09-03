@@ -6,7 +6,9 @@ This is a panel that displays a Google Map.
 
 There are versions of this extension that work with Google Maps V2 or V3, along with versions that are compatible with ExtJS 3 or 4
 
-* GMapPanel - Google Maps V2 & ExtJS 3
-* GMapPanel3 - Google Maps V3 & ExtJS 3
-* GMapPanel3-Ext4 - Google Maps V3 & ExtJS 4
+* Ext.ux.GMapPanel.js - Google Maps V2 & ExtJS 3
+* Ext.ux.GMapPanel3.js - Google Maps V3 & ExtJS 3
+* Ext.ux.GMapPanelStatic.js - Google Static Maps & ExtJS 3/Sencha Touch (experimental)
+* GMapPanel3.js - Google Maps V3 & ExtJS 4
+* GMapPanelStatic.js - Google Static Maps & ExtJS 4 (experimental)
 
