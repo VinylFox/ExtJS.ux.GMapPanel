@@ -641,6 +641,64 @@ buttons: [
     		}, this.addAddressToMap.createDelegate(this, [addr, marker, clear, center, listeners], true));
         
     },
+    
+    /**
+     * Looks up an address and calls a callback when completed.
+     * 
+     * The callback will receive the instance of the map as well as the address
+     * used to do the lookup.
+     * 
+     * Callback parameters:
+     * - map: 		The instance of the GMapPanel3 object
+     * - point:		An instance of a google.maps.LatLng object
+     * - address:	The original address passed
+     * - response:	The response as returned by the google API
+     * - status:	The status (e.g. OK) as returned by the google API
+     * 
+     * Example code:
+     * <pre><code>
+map.lookupAddress("New York", function (map, point, address, response, status) {
+	map.setMapCenter(point);
+});
+     * </code></pre> 
+     * 
+     * @param {String} addr The address to look up 
+     * @param {Function} callback The function to call when the action is completed
+     */
+    lookupAddress: function (addr, callback) {
+    	this.geocoder.geocode({
+    		address: addr
+    		}, function (response, status) {
+    			 if (!response || status !== 'OK') {
+    		            this.respErrorMsg(status);
+    			 } else {
+    				 var 	place = response[0].geometry.location,
+			          		accuracy = this.getLocationTypeInfo(response[0].geometry.location_type,'level'),
+			          		reqAccuracy = this.getLocationTypeInfo(this.minGeoAccuracy,'level');
+    				 
+    				 if (accuracy === 0) {
+    					 this.geoErrorMsg(this.geoErrorTitle, this.geoErrorMsgUnable);
+    				 }else{
+    					 if (accuracy < reqAccuracy) {
+    						 this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, response[0].geometry.location_type, this.getLocationTypeInfo(response[0].geometry.location_type,'msg')));
+    					 }else{
+    						 point = new google.maps.LatLng(place.xa,place.za);
+    						 callback(this, point, addr, response, status);
+    					 }
+    				 }
+    			 }
+    			
+    			
+    		}.createDelegate(this));
+    },
+    // private
+    getGeocoder: function(){
+    	if (!this.geocoder) {
+            this.geocoder = new google.maps.Geocoder();
+        }
+    	
+    	return this.geocoder;
+    } ,
   	// private 
   	centerOnClientLocation : function(){
   		this.getClientLocation(function(loc){
@@ -691,6 +749,20 @@ buttons: [
             }
         }
         
+    },
+    /**
+     * Sets the map's center to a specific coordinate.
+     * 
+     * @param point A google.maps.LatLng object
+     */
+    setMapCenter: function (point) {
+    	if (!point.xa || !point.za) {
+    		this.geoErrorMsg("Point format not valid", "The parameter point needs to be an object with the xa and za properties set.");
+    		return;
+    	}
+    	
+    	this.getMap().setCenter(point);
+    	this.lastCenter = point;
     },
     // private
     geoErrorMsg : function(title,msg){
