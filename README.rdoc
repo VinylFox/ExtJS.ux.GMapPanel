@@ -1,8 +1,8 @@
-== Google Maps Panel ==
+= Google Maps Panel
 
 This is a panel that displays a Google Map.
 
-= Compatibility =
+== Compatibility
 
 There are versions of this extension that work with Google Maps V2 or V3, along with versions that are compatible with ExtJS 3 or 4
 
@@ -13,17 +13,17 @@ There are versions of this extension that work with Google Maps V2 or V3, along 
 * GMapPanelStatic.js - Google Static Maps & ExtJS 4 (experimental)
 
 
-= Examples for ExtJS 3.x =
-* Tabs[tree/master/examples/tabs] - Google Maps V3
-* {Advanced Re-center Map}[tree/master/examples/advanced] - Google Maps V3
-* Charts[tree/master/examples/charts] - Google Maps V3
-* {Full Screen}[tree/master/examples/fullscreen] - Google Maps V3
-* {Window Basic}[tree/master/examples/window] - Google Maps V2
-* {Sky Map}[tree/master/examples/advanced] - Google Maps V2
+== Examples for ExtJS 3.x
+* [Tabs]link:tree/master/examples/tabs - Google Maps V3
+* [Advanced Re-center Map]link:tree/master/examples/advanced - Google Maps V3
+* [Charts]link:tree/master/examples/charts - Google Maps V3
+* [Full Screen]link:tree/master/examples/fullscreen - Google Maps V3
+* [Window Basic]link:tree/master/examples/window - Google Maps V2
+* [Sky Map]link:tree/master/examples/advanced - Google Maps V2
 
-= Examples for ExtJS 4.x =
-* {Window Basic Ext4}[tree/master/examples/window] - Google Maps V3
-* {Window Static}[tree/master/examples/window] - Google Static Maps
+== Examples for ExtJS 4.x
+* [Window Basic Ext4]link:tree/master/examples/window - Google Maps V3
+* [Window Static]link:tree/master/examples/window - Google Static Maps
 
-= Examples for Sencha Touch =
+== Examples for Sencha Touch
 * None yet - coming soon
