@@ -14,16 +14,16 @@ There are versions of this extension that work with Google Maps V2 or V3, along 
 
 
 == Examples for ExtJS 3.x
-* [Tabs]link:/tree/master/examples/tabs - Google Maps V3
-* [Advanced Re-center Map]link:/tree/master/examples/advanced - Google Maps V3
-* [Charts]link:/tree/master/examples/charts - Google Maps V3
-* [Full Screen]link:/tree/master/examples/fullscreen - Google Maps V3
-* [Window Basic]link:/tree/master/examples/window - Google Maps V2
-* [Sky Map]link:/tree/master/examples/advanced - Google Maps V2
+* Tabs - link:ExtJS.ux.GMapPanel/tree/master/examples/tabs - Google Maps V3
+* Advanced Re-center Map - link:ExtJS.ux.GMapPanel/tree/master/examples/advanced - Google Maps V3
+* Charts - link:ExtJS.ux.GMapPanel/tree/master/examples/charts - Google Maps V3
+* Full Screen - link:ExtJS.ux.GMapPanel/tree/master/examples/fullscreen - Google Maps V3
+* Window Basic - link:ExtJS.ux.GMapPanel/tree/master/examples/window - Google Maps V2
+* Sky Map - link:ExtJS.ux.GMapPanel/tree/master/examples/advanced - Google Maps V2
 
 == Examples for ExtJS 4.x
-* [Window Basic Ext4]link:/tree/master/examples/window - Google Maps V3
-* [Window Static]link:/tree/master/examples/window - Google Static Maps
+* Window Basic Ext4 - link:ExtJS.ux.GMapPanel/tree/master/examples/window - Google Maps V3
+* Window Static - link:ExtJS.ux.GMapPanel/tree/master/examples/window - Google Static Maps
 
 == Examples for Sencha Touch
 * None yet - coming soon
