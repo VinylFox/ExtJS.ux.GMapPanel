@@ -689,7 +689,7 @@ buttons: [
                 this.geoErrorMsg(this.geoErrorTitle, this.geoErrorMsgUnable);
             }else{
                 if (accuracy < reqAccuracy) {
-                    this.geoErrorMsg(this.geoErrorTitle, String.format(this.geoErrorMsgAccuracy, response[0].geometry.location_type, this.getLocationTypeInfo(response[0].geometry.location_type,'msg')));
+                    this.geoErrorMsg(this.geoErrorTitle, Ext.String.format(this.geoErrorMsgAccuracy, response[0].geometry.location_type, this.getLocationTypeInfo(response[0].geometry.location_type,'msg')));
                 }else{
                     point = new google.maps.LatLng(place.lat(),place.lng());
                     if (center){
