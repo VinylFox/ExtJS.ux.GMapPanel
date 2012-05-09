@@ -423,7 +423,8 @@ markers: [{
     },
     /**
      * Creates markers from the array that is passed in. Each marker must consist of at least
-     * <code>lat</code> and <code>lng</code> properties or a <code>geoCodeAddr</code>.
+     * <code>lat</code> and <code>lng</code> properties or a <code>geoCodeAddr</code>
+     * and a google marker object <code>marker</code>.
      * @param {Array} markers an array of marker objects
      */
     addMarkers : function(markers) {
