@@ -434,6 +434,11 @@ markers: [{
                         this.geoCodeLookup(markers[i].geoCodeAddr, markers[i].marker, false, markers[i].setCenter, markers[i].listeners);
                     } else {
                         var mkr_point = new google.maps.LatLng(markers[i].lat, markers[i].lng);
+                        if(typeof markers[i].marker=='undefined'){
+	                       markers[i].marker = new google.maps.Marker({
+	            			position: mkr_point
+	        		});	
+                        }
                         this.addMarker(mkr_point, markers[i].marker, false, markers[i].setCenter, markers[i].listeners);
                     }
                 }
