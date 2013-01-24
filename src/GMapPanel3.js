@@ -260,7 +260,12 @@ markers: [{
               marker: [],
               polyline: [],
               infowindow: []
-          }
+          },
+          listeners : {
+                    resize : function(p, w, h) {
+                        p.onResize(w,h);
+                    }
+                }
         });
         
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
@@ -278,14 +283,28 @@ markers: [{
         if (this.rendered){
 
           Ext.defer(function(){            
-              if (this.gmapType === 'map'){            
+              if (this.gmapType === 'map'){
                   this.gmap = new google.maps.Map(this.getEl().dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
                   this.mapDefined = true;
                   this.mapDefinedGMap = true;
               }
               
               if (this.gmapType === 'panorama'){
-                  this.gmap = new GStreetviewPanorama(this.getEl().dom);
+                  if (typeof this.setCenter === 'object')
+                  {
+                      var xy = new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng);                      
+                      var opts = {
+                          position: xy,
+                          pov: {
+                            heading: this.yaw,
+                            pitch: this.pitch, 
+                            zoom: this.zoomLevel
+                            }
+                          };
+                      this.lastCenter = xy;
+                      this.gmap = new  google.maps.StreetViewPanorama(this.getEl().dom,opts);
+                  }else 
+                    this.gmap = new  google.maps.StreetViewPanorama(this.getEl().dom);
                   this.mapDefined = true;
               }
       
@@ -312,9 +331,6 @@ markers: [{
                       if (typeof this.setCenter.marker === 'object' && typeof point === 'object') {
                           this.addMarker(point, this.setCenter.marker, this.setCenter.marker.clear);
                       }
-                  }
-                  if (this.gmapType === 'panorama'){
-                      this.getMap().setLocationAndPOV(new google.maps.LatLng(this.setCenter.lat,this.setCenter.lng), {yaw: this.yaw, pitch: this.pitch, zoom: this.zoomLevel});
                   }
               }          
         }, 200,this); // Ext.defer
@@ -369,7 +385,7 @@ markers: [{
         // check for the existance of the google map in case the onResize fires too early
         if (typeof this.getMap() == 'object') {
             google.maps.event.trigger(this.getMap(), 'resize');
-            if (this.lastCenter){
+            if (this.lastCenter && (this.gmapType!='panorama')){
               this.getMap().setCenter(this.lastCenter, this.zoomLevel);
             }
         }
