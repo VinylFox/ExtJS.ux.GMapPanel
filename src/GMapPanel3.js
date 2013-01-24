@@ -260,7 +260,12 @@ markers: [{
               marker: [],
               polyline: [],
               infowindow: []
-          }
+          },
+          listeners : {
+                    resize : function(p, w, h) {
+                        p.onResize(w,h);
+                    }
+                }
         });
         
         Ext.ux.GMapPanel.superclass.initComponent.call(this);        
@@ -380,7 +385,7 @@ markers: [{
         // check for the existance of the google map in case the onResize fires too early
         if (typeof this.getMap() == 'object') {
             google.maps.event.trigger(this.getMap(), 'resize');
-            if (this.lastCenter){
+            if (this.lastCenter && (this.gmapType!='panorama')){
               this.getMap().setCenter(this.lastCenter, this.zoomLevel);
             }
         }
