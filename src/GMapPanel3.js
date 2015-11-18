@@ -239,7 +239,12 @@ markers: [{
     mapDefinedGMap: false,
     initComponent : function(){
         
-        this.addEvents(
+    
+       
+    	//Observable.addEvents is deprecated in Ext 5/6
+      if ( Ext.getVersion().major < 5 )
+      {
+      	this.addEvents(
             /**
              * @event mapready
              * Fires when the map is ready for interaction
@@ -253,6 +258,9 @@ markers: [{
              */
             'apiready'
         );
+      }
+        
+        
         
         Ext.applyIf(this,{
           markers: [],
@@ -276,7 +284,7 @@ markers: [{
           window.gmapapiready = Ext.Function.bind(this.apiReady,this);
           this.buildScriptTag('http://maps.google.com/maps/api/js?sensor=false&callback=gmapapiready');
         }
-
+				
     },
     apiReady : function(){
         
@@ -286,7 +294,7 @@ markers: [{
               if (this.gmapType === 'map'){
                   this.gmap = new google.maps.Map(this.getEl().dom, {zoom:this.zoomLevel,mapTypeId: google.maps.MapTypeId.ROADMAP});
                   this.mapDefined = true;
-                  this.mapDefinedGMap = true;
+                  this.mapDefinedGMap = true;                
               }
               
               if (this.gmapType === 'panorama'){
@@ -332,13 +340,100 @@ markers: [{
                           this.addMarker(point, this.setCenter.marker, this.setCenter.marker.clear);
                       }
                   }
-              }          
+              }   
+              
+              this.addPlacesSearch(this.gmap);        
         }, 200,this); // Ext.defer
           
         }else{
           this.on('afterrender', this.apiReady, this);
         }
+        
+        
     },
+    
+    //adds the 'places search' combo box to the Map panel,
+    //reference: https://developers.google.com/maps/documentation/javascript/examples/places-searchbox
+    addPlacesSearch: function(map)
+    {
+    	// Create the style markup for the input box
+		  var styleMarkup = 
+		  '<style>' + 
+		  ' #pac-input ' + 
+		  ' {' + 
+		  '  width: 250px; background-color: #fff; ' +
+		  '  font-family: Roboto; font-size: 15px; font-weight: 300; margin-left: 12px; margin-top: 10px; ' +
+		  '  padding: 0 11px 0 13px;  text-overflow: ellipsis; ' + 
+		  '  border: 1px solid transparent; border-radius: 2px 0 0 2px;' +
+		  '  box-sizing: border-box; -moz-box-sizing: border-box; height: 32px; outline: none; ' + 
+		  '  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);' + 
+		  ' }\n' + 
+		  ' #pac-input:focus ' + 
+		  '  {border-color: #4d90fe;}\n' + 
+		  '</style>';
+		  Ext.DomHelper.append(Ext.getBody(), styleMarkup);
+		  
+		  // Create the search box and link it to the UI element.
+		  var inputMarkup = 
+		  '<input id="pac-input" type="text" placeholder="Places Search">';
+		  Ext.DomHelper.append(Ext.getBody(), inputMarkup);
+		  
+		  var input = document.getElementById('pac-input');
+		  var searchBox = new google.maps.places.SearchBox(input);
+		  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+		  
+		  // Bias the SearchBox results towards current map's viewport.
+		  map.addListener('bounds_changed', function() {
+		    searchBox.setBounds(map.getBounds());
+		  });
+		  
+		  var markers = [];
+		  // Listen for the event fired when the user selects a prediction and retrieve
+		  // more details for that place.
+		  searchBox.addListener('places_changed', function() {
+		    var places = searchBox.getPlaces();
+		
+		    if (places.length == 0) {
+		      return;
+		    }
+		
+		    // Clear out the old markers.
+		    markers.forEach(function(marker) {
+		      marker.setMap(null);
+		    });
+		    markers = [];
+		
+		    // For each place, get the icon, name and location.
+		    var bounds = new google.maps.LatLngBounds();
+		    places.forEach(function(place) {
+		      var icon = {
+		        url: place.icon,
+		        size: new google.maps.Size(71, 71),
+		        origin: new google.maps.Point(0, 0),
+		        anchor: new google.maps.Point(17, 34),
+		        scaledSize: new google.maps.Size(25, 25)
+		      };
+		
+		      // Create a marker for each place.
+		      markers.push(new google.maps.Marker({
+		        map: map,
+		        icon: icon,
+		        title: place.name,
+		        position: place.geometry.location
+		      }));
+		
+		      if (place.geometry.viewport) {
+		        // Only geocodes have viewport.
+		        bounds.union(place.geometry.viewport);
+		      } else {
+		        bounds.extend(place.geometry.location);
+		      }
+		    });
+		    map.fitBounds(bounds);
+		  });
+		  
+    },
+    
     // private
     afterRender : function(){
         
@@ -366,7 +461,7 @@ markers: [{
         this.addMarkers(this.markers);
         this.addMapListeners();
         
-        this.fireEvent('mapready', this, this.getMap());
+        this.fireEvent('mapready', this, this.getMap()); 
         return this;
     },
     // private
@@ -380,7 +475,9 @@ markers: [{
     // private
     onResize : function(w, h){
         
-        Ext.ux.GMapPanel.superclass.onResize.call(this, w, h);
+        //the line below causes 'Maximum call stack size exceeded' exception / Ext 4/5/6
+        //Ext.ux.GMapPanel.superclass.onResize.call(this, w, h);
+        
 
         // check for the existance of the google map in case the onResize fires too early
         if (typeof this.getMap() == 'object') {
